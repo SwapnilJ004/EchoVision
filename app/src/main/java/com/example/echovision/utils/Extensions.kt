@@ -42,7 +42,7 @@ fun Bitmap.drawBoundingBoxes(
     val closeDetectedObjects = mutableListOf<Array<String>>()
     val veryCloseDetectedObjects = mutableListOf<Array<String>>()
     val proximityThreshold = 300000 // threshold area of bounding box indicating nearness or farness
-    val catastrophicProximityThreshold = 3000000
+    val catastrophicProximityThreshold = 2000000
 
     // Iterate through the detections
     detections.forEachIndexed { i, detection ->
@@ -109,6 +109,9 @@ fun Bitmap.drawBoundingBoxes(
         textStringToSpeech += "$name is $status,"
         Log.d("MyApp", "Detected $name is $status")
     }
+
+    // Edge case if nothing is detected
+    if(textStringToSpeech == "Detected ") textStringToSpeech = ""
 
     // Text to speech:
     var tts: TextToSpeech? = null
