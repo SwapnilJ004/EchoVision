@@ -1,7 +1,6 @@
 package com.example.echovision.utils
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,6 +10,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Log
 import java.util.Locale
 import kotlin.math.abs
+
 
 
 fun Bitmap.drawBoundingBoxes(
@@ -38,9 +38,11 @@ fun Bitmap.drawBoundingBoxes(
 
 
     val scoreThreshold = 0.4f  // 60%
-    val detectedObjects = mutableListOf<Array<String>>()
+    val farDetectedObjects = mutableListOf<Array<String>>()
+    val closeDetectedObjects = mutableListOf<Array<String>>()
+    val veryCloseDetectedObjects = mutableListOf<Array<String>>()
     val proximityThreshold = 300000 // threshold area of bounding box indicating nearness or farness
-    val catastropicProximityThreshold = 3000000
+    val catastrophicProximityThreshold = 3000000
 
     // Iterate through the detections
     detections.forEachIndexed { i, detection ->
@@ -72,25 +74,39 @@ fun Bitmap.drawBoundingBoxes(
         )
 
         val label = labels[classIndices[i].toInt()]
+        var dangerLevel = dangerLevel[classIndices[i].toInt()]
         canvas.drawText("$label: %.2f".format(score), adjX1, adjY1 - 10, textPaint)
 
-        if(area >= catastropicProximityThreshold){
-            detectedObjects.add(arrayOf(label, "very near"))
+        if(area >= catastrophicProximityThreshold){
+            veryCloseDetectedObjects.add(arrayOf(label, "very near", dangerLevel.toString()))
         }
         else if(area >= proximityThreshold){
-            detectedObjects.add(arrayOf(label, "near"))
+            closeDetectedObjects.add(arrayOf(label, "near", dangerLevel.toString()))
         }
         else{
-            detectedObjects.add(arrayOf(label, "far"))
+            farDetectedObjects.add(arrayOf(label, "far", dangerLevel.toString()))
         }
+
+        // Sort the detected object arrays based on their danger level
+        veryCloseDetectedObjects.sortBy { it[2].toInt() }
+        closeDetectedObjects.sortBy { it[2].toInt() }
+        farDetectedObjects.sortBy { it[2].toInt() }
     }
 
-    var textStringToSpeech = ""
-    detectedObjects.forEach { (name, status) ->
-        if(status == "very near"){
-            textStringToSpeech += "Take care! Detected $name is $status,"
-        }
-        else textStringToSpeech += "Detected $name is $status,"
+    var textStringToSpeech = "Detected "
+    // TTS on the basis of proximity and catastrophe-priority
+    veryCloseDetectedObjects.forEach { (name, status) ->
+        textStringToSpeech += "$name is $status,"
+        Log.d("MyApp", "Detected $name is $status")
+    }
+
+    closeDetectedObjects.forEach { (name, status) ->
+        textStringToSpeech += "$name is $status,"
+        Log.d("MyApp", "Detected $name is $status")
+    }
+
+    farDetectedObjects.forEach { (name, status) ->
+        textStringToSpeech += "$name is $status,"
         Log.d("MyApp", "Detected $name is $status")
     }
 
@@ -108,14 +124,13 @@ fun Bitmap.drawBoundingBoxes(
                 Log.e("TTS", "Language not supported")
             } else {
                 // You can speak immediately here if you want
-
                 speakOut(textStringToSpeech)
             }
         } else {
             Log.e("TTS", "Initialization failed")
         }
     }
-
+    Log.e("MyApp", classIndices.contentToString())
 
     return outputBitmap
 }
