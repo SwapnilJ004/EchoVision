@@ -62,8 +62,25 @@ fun Bitmap.drawBoundingBoxes(
         val adjX2 = x2 / (newWidth / originalWidth)
         val adjY2 = y2 / (newHeight / originalHeight)
 
-       val area = abs(adjX2 - adjX1)*abs(adjY2 - adjY1)
+        val area = abs(adjX2 - adjX1)*abs(adjY2 - adjY1)
+        val absMedian = originalWidth/2.0
+        val objectMedian = (adjX1 + adjX2)/2.0
+        var direction = ""
+
+        if(objectMedian > absMedian*1.2){
+            direction = "right"
+        }
+        else if(objectMedian < absMedian*0.8){
+            direction = "left"
+        }
+        else{
+            direction = "center"
+        }
+
         println("Area is: $area for ${labels[classIndices[i].toInt()]}")
+        Log.d("MyApp", "Original height: ${originalHeight}")
+        Log.d("MyApp", "Original width: ${originalWidth}")
+
         Log.d("MyApp", "Area is: $area for ${labels[classIndices[i].toInt()]}")
 
         // Draw the bounding box
@@ -78,13 +95,13 @@ fun Bitmap.drawBoundingBoxes(
         canvas.drawText("$label: %.2f".format(score), adjX1, adjY1 - 10, textPaint)
 
         if(area >= catastrophicProximityThreshold){
-            veryCloseDetectedObjects.add(arrayOf(label, "very near", dangerLevel.toString()))
+            veryCloseDetectedObjects.add(arrayOf(label, "very near", dangerLevel.toString(), direction))
         }
         else if(area >= proximityThreshold){
-            closeDetectedObjects.add(arrayOf(label, "near", dangerLevel.toString()))
+            closeDetectedObjects.add(arrayOf(label, "near", dangerLevel.toString(), direction))
         }
         else{
-            farDetectedObjects.add(arrayOf(label, "far", dangerLevel.toString()))
+            farDetectedObjects.add(arrayOf(label, "far", dangerLevel.toString(), direction))
         }
 
         // Sort the detected object arrays based on their danger level
@@ -95,18 +112,18 @@ fun Bitmap.drawBoundingBoxes(
 
     var textStringToSpeech = "Detected "
     // TTS on the basis of proximity and catastrophe-priority
-    veryCloseDetectedObjects.forEach { (name, status) ->
-        textStringToSpeech += "$name is $status,"
+    veryCloseDetectedObjects.forEach { (name, status, _, direction) ->
+        textStringToSpeech += "$name is $status, towards $direction"
         Log.d("MyApp", "Detected $name is $status")
     }
 
-    closeDetectedObjects.forEach { (name, status) ->
-        textStringToSpeech += "$name is $status,"
+    closeDetectedObjects.forEach { (name, status, _, direction) ->
+        textStringToSpeech += "$name is $status,towards $direction"
         Log.d("MyApp", "Detected $name is $status")
     }
 
-    farDetectedObjects.forEach { (name, status) ->
-        textStringToSpeech += "$name is $status,"
+    farDetectedObjects.forEach { (name, status, _, direction) ->
+        textStringToSpeech += "$name is $status, towards $direction"
         Log.d("MyApp", "Detected $name is $status")
     }
 
